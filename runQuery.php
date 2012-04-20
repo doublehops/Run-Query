@@ -104,29 +104,30 @@
             {
                 case 'showTables' :
 
-                    $theQuery = $this->dbh->prepare( 'SHOW TABLES' );
-                    $theQuery->execute();
-                    $results = $theQuery->fetchAll( PDO::FETCH_ASSOC );
+                    $results = $this->execute( 'SHOW TABLES', PDO::FETCH_ASSOC );
 
                     break;
 
                 case 'desc' :
 
-                    $theQuery = $this->dbh->prepare( $query );
-                    $theQuery->execute();
-                    $results = $theQuery->fetchAll( PDO::FETCH_OBJ );
+                    $results = $this->execute( $query, PDO::FETCH_OBJ );
 
                     break;
 
                 case 'select' :
 
-                    $theQuery = $this->dbh->prepare( $query );
-                    $theQuery->execute();
-                    $results = $theQuery->fetchAll( PDO::FETCH_ASSOC );
+                    $results = $this->execute( $query, PDO::FETCH_ASSOC );
 
-                    if( preg_match( '/^select \*/i', $query ) == 1 )
+                    if( $this->isErrorFree() )
                     {
-                        $fields = $this->getFields( $query );
+                        if( preg_match( '/^select \*/i', $query ) == 1 )
+                        {
+                            $fields = $this->getFields( $query );
+                        }
+                    }
+                    else
+                    {
+                        die( 'handle error' );
                     }
 
                     break;
@@ -135,6 +136,24 @@
             $fields = isset( $fields ) ? $fields : false;
 
             return array( 'results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields );
+        }
+
+        private function execute( $query, $fetchMode )
+        {
+            try
+            {
+                $theQuery = $this->dbh->prepare( $query );
+                $theQuery->execute();
+                $results = $theQuery->fetchAll( $fetchMode );
+            }
+            catch ( PDOException $e )
+            {
+                $this->errorMsg[] = $e->getMessage();
+                $results = false;
+            }
+
+            return $results;
+
         }
 
         private function getFields( $query )
