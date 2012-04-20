@@ -306,7 +306,7 @@
             $results = $parameters['results'];
             $tableName = substr( $_REQUEST['query'], strpos( $_REQUEST['query'], ' ' )+1 );
             ?>
-            <p>Description for <a href="?action=runQuery&amp;query=SELECT%20*%20FROM%20<?php echo $tableName ?>"><?php echo $tableName ?></a></p>
+            <p>Description of table <a href="?action=runQuery&amp;query=SELECT%20*%20FROM%20<?php echo $tableName ?>"><?php echo $tableName ?></a></p>
             <table id="results"><tr><td>Field</td><td>Type</td><td>Null</td><td>Key</td><td>Default</td><td>Extra</td></tr><?php
 
             foreach( $results as $result )
@@ -408,10 +408,9 @@
 
             <div id="queryBox">
                 <form action="" method="post">
-                    <label for="query">Query</label>
                     <textarea name="query" id="query"></textarea>
-                    <input type="submit" name="submit" value="submit" />
-                    <input type="hidden" name="action" value="runQuery">
+                    <p><input type="submit" name="submit" value="Run Query" /></p>
+                    <p><input type="hidden" name="action" value="runQuery" id="runQuery"></p>
                 </form>
             </div> <!-- end queryBox -->
 
@@ -455,7 +454,7 @@
             ?>
                 <div id="menu">
                     <ul>
-                        <li><a href="?action=runQuery&query=show%20tables">Show Tables</a></li>
+                        <li><a href="?action=runQuery&query=show%20tables">Show Tables</a></li> | 
                         <li><a href="?action=logout">Logout</a></li>
                     </ul>
                 </div> <!-- end menu -->
@@ -476,6 +475,7 @@
                     <title>runQuery</title>
                     <meta name="description" content="runQuery">
                     <meta name="author" content="Simple MySQL App">
+                    <?php $this->styles(); ?>
                 </head>
                 <body>
                     <div id="container">
@@ -493,6 +493,83 @@
                 </body>
             </html>
 
+            <?php
+        }
+
+        function styles()
+        {
+            ?>
+                <link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css" />
+                <style>
+                    body {
+                        font-size: 14px;
+                        font-family: Arial;
+                    }
+
+                    a:link, a:visited, a:active {
+                        text-decoration: none;
+                        color: #333;
+                    }
+
+                    a:hover { color: #666; }
+
+                    #container { width: 100%; }
+
+                    #menu { width: 400px; }
+
+                    #menu ul {
+                       list-style-type: none; 
+                       padding-left: 0;
+                    }
+
+                    #menu ul li {
+                        display: inline;
+                    }
+
+                    #queryBox, #query, #runQuery, #menu, #results {
+                        clear: both;
+                        margin: 0 auto;
+                        text-align: center;
+                    }
+
+                    #queryBox {
+                        width: 650px;
+                        padding: 20px;
+                        border: 2px solid #a30;
+                        border-radius: 10px;
+                    }
+
+                    #container p {
+                        text-align: center;
+                    }
+                    p a { font-style: italic; }
+
+                    #query {
+                        padding-top: 3px;
+                        width: 600px;
+                        height: 75px;
+                        border: 1px solid #ccc;
+                        border-radius: 10px;
+                        text-align: left;
+                        text-indent: 10px;
+                    }
+
+                    #results {
+                        margin-top: 30px;
+                        text-align: left;
+                        border: 1px solid #ccc;
+                        border-radius: 10px;
+                        text-align: left;
+                        text-indent: 10px;
+                    }
+                    
+                    td {
+                        border-bottom: 1px solid #ddd;
+                        border-right: 1px solid #ddd;
+                    }
+
+                    tr td:last-child { border-right: none; }
+                </style>
             <?php
         }
     }
