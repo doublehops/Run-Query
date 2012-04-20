@@ -24,6 +24,13 @@
             $this->view->render( 'header' );
             $this->view->render( 'menu' );
 
+            if( $action == 'logout' )
+            {
+                $this->session->destroySession();
+                $this->view->render( 'loginForm' );
+                exit;
+            }
+
             if( $this->session->isActiveSessionGood() )
             {
                 $this->dbConn->connect( $_SESSION['mysqlHost'], $_SESSION['mysqlDatabase'], $_SESSION['mysqlUsername'], $_SESSION['mysqlPassword'] );
@@ -196,6 +203,15 @@
             $_SESSION['mysqlPassword'] = $password;
         }
 
+        public function destroySession()
+        {
+            session_destroy();
+            setcookie( session_name(), '', time() - 42000) ;
+            unset( $_SESSION['mysqlHost'] );
+            unset( $_SESSION['mysqlDatabase'] );
+            unset( $_SESSION['mysqlUsername'] );
+            unset( $_SESSION['mysqlPassword'] );
+        }
     }
 
     class View 
@@ -207,10 +223,8 @@
         {
             $messages = isset( $parameters['messages'] ) ? $parameters['messages'] : false;
 
-//            $this->header();
             if( $messages != false ) $this->printMessages( $messages );
             $this->$view( $parameters );
-//            $this->footer();
         }
 
         private function desc( $parameters )
