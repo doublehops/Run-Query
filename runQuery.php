@@ -131,6 +131,12 @@
                     }
 
                     break;
+                
+                case '' :
+
+                    die( 'No query received' );
+
+                    break;
             }
 
             $fields = isset( $fields ) ? $fields : false;
