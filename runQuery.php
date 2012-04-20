@@ -571,6 +571,9 @@
                         border-right: 1px solid #ddd;
                     }
 
+                    #results tr:nth-child(odd) { background-color: #fff; }
+                    #results tr:nth-child(even) { background-color: #eee; }
+
                     tr td:last-child { border-right: none; }
                     tr:last-child  td { border-bottom: none; }
 
