@@ -3,6 +3,9 @@
     $ctrl = new Controller();
     $ctrl->start();
 
+    /*
+     *  Control the flow of the application. 
+     */
     class Controller
     {
         private $session;
@@ -10,6 +13,9 @@
         private $dbConn;
         private $alertMessages = array();
 
+        /*
+         *   Create instances of Session, DB and View
+         */
         public function __construct()
         {
             $this->session = new Session();
@@ -17,6 +23,9 @@
             $this->view = new View();
         }
 
+        /*
+         *  Start handling requests
+         */
         public function start()
         {
             $action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : false;
@@ -31,6 +40,7 @@
                 exit;
             }
 
+            // If current session available, reconnect to DB
             if( $this->session->isActiveSessionGood() )
             {
                 $this->dbConn->connect( $_SESSION['mysqlHost'], $_SESSION['mysqlDatabase'], $_SESSION['mysqlUsername'], $_SESSION['mysqlPassword'] );
@@ -72,6 +82,10 @@
 
     }
 
+    /*
+     *  class DB
+     *  Handle all database connections, queries and errors.
+     */
     class DB
     {
         private $dbh;
@@ -102,6 +116,18 @@
 
             switch ( $queryType )
             {
+                case 'insert' :
+
+                    //$results = $this->execute( 'SHOW TABLES', PDO::FETCH_ASSOC );
+
+                    break;
+
+                case 'update' :
+
+                    //$results = $this->execute( 'SHOW TABLES', PDO::FETCH_ASSOC );
+
+                    break;
+
                 case 'showTables' :
 
                     $results = $this->execute( 'SHOW TABLES', PDO::FETCH_ASSOC );
@@ -162,6 +188,9 @@
 
         }
 
+        /*
+         *  Return field (or column) names
+         */
         private function getFields( $query )
         {
             $fields = array();
@@ -181,6 +210,9 @@
             return $fields;
         }
 
+        /*
+         *  Determine the type of query that's being requested and handle accordingly
+         */
         private function queryType( $query )
         {
             if( preg_match( '/^SELECT/i', $query ) ) return 'select';
@@ -188,17 +220,27 @@
             if( preg_match( '/^DESC/i', $query ) ) return 'desc';
         }
 
+        /*
+         *  Return error messages recorded
+         */
         public function getErrors()
         {
             return $this->errorMsg;
         }
 
+        /*
+         *  Return whether last query encountered errors
+         */
         public function isErrorFree()
         {
             return $this->errorMsg == false ? true : false;
         }
     }
 
+    /*
+     *  class Session
+     *  Handle all session data to store database connection info between page loads
+     */
     class Session
     {
         public function __construct()
@@ -239,10 +281,14 @@
         }
     }
 
+    /*
+     *  class View
+     *  Try to separate view from the rest of the code as best as possible in a single file script.
+     */
     class View 
     {
         /*
-         * second parameter to be an array of messages and results
+         * second parameter to be an array of arrays that might include messages and values
          */
         public function render( $view, $parameters=array() )
         {
@@ -252,6 +298,9 @@
             $this->$view( $parameters );
         }
 
+        /*
+         *  Print table description view
+         */
         private function desc( $parameters )
         {
             $results = $parameters['results'];
@@ -277,6 +326,9 @@
             ?></table><?php
         }
 
+        /*
+         *  Print select query results
+         */
         private function select( $parameters )
         {
             $results = $parameters['results'];
@@ -309,6 +361,9 @@
             ?></table><?php
         }
 
+        /*
+         *  Print show tables view
+         */
         private function showTables( $parameters )
         {
             $results = $parameters['results'];
@@ -329,6 +384,9 @@
             ?></table><?php
         }
 
+        /*
+         *  Print messages view
+         */
         private function printMessages( $messages )
         {
             ?>
@@ -341,6 +399,9 @@
             <?php
         }
 
+        /*
+         *  Print query query textarea
+         */
         private function queryBox()
         {
             ?>
@@ -357,6 +418,9 @@
             <?php
         }
 
+        /*
+         *  Print login form
+         */
         private function loginForm()
         {
             $mysqlHost = isset( $_SESSION['mysqlHost'] ) ? $_SESSION['mysqlHost'] : 'localhost';
@@ -383,6 +447,9 @@
             <?php
         }
 
+        /*
+         *  Print menu
+         */
         function menu()
         {
             ?>
@@ -395,6 +462,9 @@
             <?php
         }
 
+        /*
+         *  Print header
+         */
         function header()
         {
             ?>
@@ -412,6 +482,9 @@
             <?php 
         }
 
+        /*
+         *  Print footer
+         */
         function footer()
         {
             ?>
