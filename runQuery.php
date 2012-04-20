@@ -404,11 +404,12 @@
          */
         private function queryBox()
         {
+            $query = isset( $_REQUEST['query'] ) ? $_REQUEST['query'] : '';
             ?>
 
             <div id="queryBox">
                 <form action="" method="post">
-                    <textarea name="query" id="query"></textarea>
+                    <textarea name="query" id="query"><?php echo $query ?></textarea>
                     <p><input type="submit" name="submit" value="Run Query" /></p>
                     <p><input type="hidden" name="action" value="runQuery" id="runQuery"></p>
                 </form>
