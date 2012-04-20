@@ -19,42 +19,42 @@
 
         public function start()
         {
-            $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : false;
+            $action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : false;
 
-            if($this->session->isActiveSessionGood())
+            if( $this->session->isActiveSessionGood() )
             {
-                $this->dbConn->connect($_SESSION['mysqlHost'], $_SESSION['mysqlDatabase'], $_SESSION['mysqlUsername'], $_SESSION['mysqlPassword']);    
+                $this->dbConn->connect( $_SESSION['mysqlHost'], $_SESSION['mysqlDatabase'], $_SESSION['mysqlUsername'], $_SESSION['mysqlPassword'] );
             }
-            elseif($action == 'login')
+            elseif( $action == 'login' )
             {
-                $this->session->saveInputData($_POST);
+                $this->session->saveInputData( $_POST );
 
-                if($this->dbConn->connect($_POST['mysqlHost'], $_POST['mysqlDatabase'], $_POST['mysqlUsername'], $_POST['mysqlPassword']))
+                if( $this->dbConn->connect( $_POST['mysqlHost'], $_POST['mysqlDatabase'], $_POST['mysqlUsername'], $_POST['mysqlPassword'] ) )
                 {
-                    $this->session->savePassword($_POST['mysqlPassword']);
+                    $this->session->savePassword( $_POST['mysqlPassword'] );
                     $this->session->setActiveSessionGood();
                 }
                 else
                 {
-                    $this->view->render('loginForm', array('messages'=>$this->dbConn->getErrors()));
+                    $this->view->render( 'loginForm', array( 'messages'=>$this->dbConn->getErrors() ) );
                     exit;
                 }
             }
             else
             {
-                $this->view->render('loginForm');
+                $this->view->render( 'loginForm' );
                 exit;
             }
 
-            $this->view->render('queryBox');
+            $this->view->render( 'queryBox' );
 
-            if($action == 'runQuery')
+            if( $action == 'runQuery' )
             {
-                $object = $this->dbConn->runQuery($_REQUEST['query']);
+                $object = $this->dbConn->runQuery( $_REQUEST['query'] );
 
                 $fields = isset( $object['fields'] ) ? $object['fields'] : false;
 
-                $this->view->render($object['queryType'], array('results'=>$object['results'], 'fields'=>$fields));
+                $this->view->render( $object['queryType'], array( 'results'=>$object['results'], 'fields'=>$fields ) );
             }
         }
 
@@ -65,18 +65,18 @@
         private $dbh;
         private $errorMsg = false;
 
-        public function connect($host, $database, $username, $password)
+        public function connect( $host, $database, $username, $password )
         {
             try
             {
                 $dsn = 'mysql:host='. $host .';dbname='. $database;
-                $this->dbh = new PDO($dsn, $username, $password);
-                $this->dbh->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
-                $this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $this->dbh = new PDO( $dsn, $username, $password );
+                $this->dbh->setAttribute( PDO::ATTR_EMULATE_PREPARES, true );
+                $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
                 $this->dbh->query( 'show tables' );  // Basic query to test connection
             }
-            catch (PDOException $e)
+            catch ( PDOException $e )
             {
                 $this->errorMsg[] = $e->getMessage();
             }
@@ -84,37 +84,37 @@
             return $this->isErrorFree() ? true : false;
         }
 
-        public function runQuery($query)
+        public function runQuery( $query )
         {
-            $queryType = $this->queryType($query);
+            $queryType = $this->queryType( $query );
 
-            switch ($queryType)
+            switch ( $queryType )
             {
                 case 'showTables' :
 
-                    $theQuery = $this->dbh->prepare('SHOW TABLES');
+                    $theQuery = $this->dbh->prepare( 'SHOW TABLES' );
                     $theQuery->execute();
-                    $results = $theQuery->fetchAll(PDO::FETCH_OBJ);
+                    $results = $theQuery->fetchAll( PDO::FETCH_OBJ );
 
                     break;
 
                 case 'desc' :
 
-                    $theQuery = $this->dbh->prepare($query);
+                    $theQuery = $this->dbh->prepare( $query );
                     $theQuery->execute();
-                    $results = $theQuery->fetchAll(PDO::FETCH_OBJ);
+                    $results = $theQuery->fetchAll( PDO::FETCH_OBJ );
 
                     break;
 
                 case 'select' :
 
-                    $theQuery = $this->dbh->prepare($query);
+                    $theQuery = $this->dbh->prepare( $query );
                     $theQuery->execute();
-                    $results = $theQuery->fetchAll(PDO::FETCH_ASSOC);
+                    $results = $theQuery->fetchAll( PDO::FETCH_ASSOC );
 
-                    if(preg_match( '/^select \*/i', $query ) == 1)
+                    if( preg_match( '/^select \*/i', $query ) == 1 )
                     {
-                        $fields = $this->getFields($query);
+                        $fields = $this->getFields( $query );
                     }
 
                     break;
@@ -122,19 +122,19 @@
 
             $fields = isset( $fields ) ? $fields : false;
 
-            return array('results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields);
+            return array( 'results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields );
         }
 
-        private function getFields($query)
+        private function getFields( $query )
         {
             $fields = array();
 
-            $tablename = explode(' ', $query);
+            $tablename = explode( ' ', $query );
             $tablename = $tablename[3];
 
-            $theQuery = $this->dbh->prepare('DESC '. $tablename);
+            $theQuery = $this->dbh->prepare( 'DESC '. $tablename );
             $theQuery->execute();
-            $results = $theQuery->fetchAll(PDO::FETCH_OBJ);
+            $results = $theQuery->fetchAll( PDO::FETCH_OBJ );
 
             foreach( $results as $result )
             {
@@ -144,11 +144,11 @@
             return $fields;
         }
 
-        private function queryType($query)
+        private function queryType( $query )
         {
-            if(preg_match('/^SELECT/i', $query)) return 'select';
-            if(preg_match('/^SHOW TABLES/i', $query)) return 'showTables';
-            if(preg_match('/^DESC/i', $query)) return 'desc';
+            if( preg_match( '/^SELECT/i', $query ) ) return 'select';
+            if( preg_match( '/^SHOW TABLES/i', $query ) ) return 'showTables';
+            if( preg_match( '/^DESC/i', $query ) ) return 'desc';
         }
 
         public function getErrors()
@@ -171,8 +171,7 @@
 
         public function isActiveSessionGood()
         {
-
-            return (isset($_SESSION['dbConnGood']) && $_SESSION['dbConnGood'] == true) ? true : false;
+            return ( isset( $_SESSION['dbConnGood'] ) && $_SESSION['dbConnGood'] == true ) ? true : false;
         }
 
         public function setActiveSessionGood()
@@ -180,14 +179,14 @@
             $_SESSION['dbConnGood'] = true;
         }
 
-        public function saveInputData($post)
+        public function saveInputData( $post )
         {
             $_SESSION['mysqlHost'] = $post['mysqlHost'];
             $_SESSION['mysqlDatabase'] = $post['mysqlDatabase'];
             $_SESSION['mysqlUsername'] = $post['mysqlUsername'];
         }
 
-        public function savePassword($password)
+        public function savePassword( $password )
         {
             $_SESSION['mysqlPassword'] = $password;
         }
@@ -199,25 +198,25 @@
         /*
          * second parameter to be an array of messages and results
          */
-        public function render($view, $parameters=array())
+        public function render( $view, $parameters=array() )
         {
-            $messages = isset($parameters['messages']) ? $parameters['messages'] : false;
+            $messages = isset( $parameters['messages'] ) ? $parameters['messages'] : false;
 
             $this->header();
-            if($messages != false) $this->printMessages($messages);
-            $this->$view($parameters);
+            if( $messages != false ) $this->printMessages( $messages );
+            $this->$view( $parameters );
             $this->footer();
         }
 
-        private function desc($parameters)
+        private function desc( $parameters )
         {
             $results = $parameters['results'];
-            $tableName = substr($_REQUEST['query'], strpos($_REQUEST['query'], ' ')+1);
+            $tableName = substr( $_REQUEST['query'], strpos( $_REQUEST['query'], ' ' )+1 );
             ?>
             <p>Description for <a href="?action=runQuery&amp;query=SELECT%20*%20FROM%20<?php echo $tableName ?>"><?php echo $tableName ?></a></p>
             <table id="results"><tr><td>Field</td><td>Type</td><td>Null</td><td>Key</td><td>Default</td><td>Extra</td></tr><?php
 
-            foreach($results as $result)
+            foreach( $results as $result )
             {
                 ?>
                     <tr>
@@ -234,7 +233,7 @@
             ?></table><?php
         }
 
-        private function select($parameters)
+        private function select( $parameters )
         {
             $results = $parameters['results'];
             ?><table id="results"><?php
@@ -249,11 +248,11 @@
                 ?></tr><?php
             }
 
-            foreach($results as $result) :
+            foreach( $results as $result ) :
 
                 ?><tr><?php
 
-                    foreach($result as $value) :
+                    foreach( $result as $value ) :
                     ?>
                         <td><?php echo $value ?></td>
 
@@ -266,12 +265,12 @@
             ?></table><?php
         }
 
-        private function showTables($parameters)
+        private function showTables( $parameters )
         {
             $results = $parameters['results'];
 
             ?><table id="results"><?php
-            foreach($results as $result)
+            foreach( $results as $result )
             {
                 ?>
                     <tr><td><a href="?action=runQuery&query=DESC%20<?php echo $result->Tables_in_cpoty ?>">D</a></td>
@@ -282,12 +281,12 @@
             ?></table><?php
         }
 
-        private function printMessages($messages)
+        private function printMessages( $messages )
         {
             ?>
 
                 <div id="messages">
-                    <?php foreach($messages as $message) : ?>
+                    <?php foreach( $messages as $message ) : ?>
                         <p><?php echo $message ?></p>
                     <?php endforeach; ?>
                 </div> <!-- end messages -->
@@ -312,9 +311,9 @@
 
         private function loginForm()
         {
-            $mysqlHost = isset($_SESSION['mysqlHost']) ? $_SESSION['mysqlHost'] : 'localhost';
-            $mysqlDatabase = isset($_SESSION['mysqlDatabase']) ? $_SESSION['mysqlDatabase'] : '';
-            $mysqlUsername = isset($_SESSION['mysqlUsername']) ? $_SESSION['mysqlUsername'] : '';
+            $mysqlHost = isset( $_SESSION['mysqlHost'] ) ? $_SESSION['mysqlHost'] : 'localhost';
+            $mysqlDatabase = isset( $_SESSION['mysqlDatabase'] ) ? $_SESSION['mysqlDatabase'] : '';
+            $mysqlUsername = isset( $_SESSION['mysqlUsername'] ) ? $_SESSION['mysqlUsername'] : '';
 
             ?>
                 <form action="" method="post">
