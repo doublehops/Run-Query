@@ -538,7 +538,7 @@
                     #queryBox {
                         width: 650px;
                         padding: 20px;
-                        border: 2px solid #a30;
+                        border: 2px solid #aaa;
                         border-radius: 10px;
                     }
 
