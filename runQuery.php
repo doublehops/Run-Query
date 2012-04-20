@@ -293,8 +293,11 @@
             foreach( $results as $result )
             {
                 ?>
-                    <tr><td><a href="?action=runQuery&query=DESC%20<?php echo $result[$tableNameKey] ?>">D</a></td>
-                    <td><?php echo $result[$tableNameKey] ?></td></tr>
+                    <tr>
+                        <td><a href="?action=runQuery&query=DESC%20<?php echo $result[$tableNameKey] ?>">Desc</a></td>
+                        <td><a href="?action=runQuery&query=SELECT%20*%20FROM%20<?php echo $result[$tableNameKey] ?>">List Items</a></td>
+                        <td><?php echo $result[$tableNameKey] ?></td>
+                    </tr>
 
                 <?php
             }
