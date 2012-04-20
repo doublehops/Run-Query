@@ -106,7 +106,7 @@
 
                     $theQuery = $this->dbh->prepare( 'SHOW TABLES' );
                     $theQuery->execute();
-                    $results = $theQuery->fetchAll( PDO::FETCH_OBJ );
+                    $results = $theQuery->fetchAll( PDO::FETCH_ASSOC );
 
                     break;
 
@@ -287,13 +287,14 @@
         private function showTables( $parameters )
         {
             $results = $parameters['results'];
+            $tableNameKey = 'Tables_in_'. $_SESSION['mysqlDatabase'];
 
             ?><table id="results"><?php
             foreach( $results as $result )
             {
                 ?>
-                    <tr><td><a href="?action=runQuery&query=DESC%20<?php echo $result->Tables_in_cpoty ?>">D</a></td>
-                    <td><?php echo $result->Tables_in_cpoty ?></td></tr>
+                    <tr><td><a href="?action=runQuery&query=DESC%20<?php echo $result[$tableNameKey] ?>">D</a></td>
+                    <td><?php echo $result[$tableNameKey] ?></td></tr>
 
                 <?php
             }
