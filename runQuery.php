@@ -19,7 +19,7 @@
 
         public function start()
         {
-            $action = isset($_POST['action']) ? $_POST['action'] : false;
+            $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : false;
 
             if($this->session->isActiveSessionGood())
             {
@@ -32,20 +32,29 @@
                 if($this->dbConn->connect($_POST['mysqlHost'], $_POST['mysqlDatabase'], $_POST['mysqlUsername'], $_POST['mysqlPassword']))
                 {
                     $this->session->savePassword($_POST['mysqlPassword']);
-                    $this->view->render('queryBox');
+                    $this->session->setActiveSessionGood();
                 }
                 else
                 {
-                    $this->view->render('loginForm', $this->dbConn->getErrors());
+                    $this->view->render('loginForm', array('messages'=>$this->dbConn->getErrors()));
+                    exit;
                 }
-            }
-            elseif($action == 'runQuery')
-            {
-            
             }
             else
             {
                 $this->view->render('loginForm');
+                exit;
+            }
+
+            $this->view->render('queryBox');
+
+            if($action == 'runQuery')
+            {
+                $object = $this->dbConn->runQuery($_REQUEST['query']);
+
+                $fields = isset( $object['fields'] ) ? $object['fields'] : false;
+
+                $this->view->render($object['queryType'], array('results'=>$object['results'], 'fields'=>$fields));
             }
         }
 
@@ -65,7 +74,7 @@
                 $this->dbh->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
                 $this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-                $this->dbh->query( 'show tables' );  // Basic query to force a test of the connection
+                $this->dbh->query( 'show tables' );  // Basic query to test connection
             }
             catch (PDOException $e)
             {
@@ -73,6 +82,73 @@
             }
 
             return $this->isErrorFree() ? true : false;
+        }
+
+        public function runQuery($query)
+        {
+            $queryType = $this->queryType($query);
+
+            switch ($queryType)
+            {
+                case 'showTables' :
+
+                    $theQuery = $this->dbh->prepare('SHOW TABLES');
+                    $theQuery->execute();
+                    $results = $theQuery->fetchAll(PDO::FETCH_OBJ);
+
+                    break;
+
+                case 'desc' :
+
+                    $theQuery = $this->dbh->prepare($query);
+                    $theQuery->execute();
+                    $results = $theQuery->fetchAll(PDO::FETCH_OBJ);
+
+                    break;
+
+                case 'select' :
+
+                    $theQuery = $this->dbh->prepare($query);
+                    $theQuery->execute();
+                    $results = $theQuery->fetchAll(PDO::FETCH_ASSOC);
+
+                    if(preg_match( '/^select \*/i', $query ) == 1)
+                    {
+                        $fields = $this->getFields($query);
+                    }
+
+                    break;
+            }
+
+            $fields = isset( $fields ) ? $fields : false;
+
+            return array('results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields);
+        }
+
+        private function getFields($query)
+        {
+            $fields = array();
+
+            $tablename = explode(' ', $query);
+            $tablename = $tablename[3];
+
+            $theQuery = $this->dbh->prepare('DESC '. $tablename);
+            $theQuery->execute();
+            $results = $theQuery->fetchAll(PDO::FETCH_OBJ);
+
+            foreach( $results as $result )
+            {
+                $fields[] = $result->Field;
+            }
+
+            return $fields;
+        }
+
+        private function queryType($query)
+        {
+            if(preg_match('/^SELECT/i', $query)) return 'select';
+            if(preg_match('/^SHOW TABLES/i', $query)) return 'showTables';
+            if(preg_match('/^DESC/i', $query)) return 'desc';
         }
 
         public function getErrors()
@@ -83,11 +159,6 @@
         public function isErrorFree()
         {
             return $this->errorMsg == false ? true : false;
-        }
-
-        private function mysqlError($error)
-        {
-            $this->error = $error;
         }
     }
 
@@ -125,12 +196,90 @@
 
     class View 
     {
-        public function render($view, $messages=false)
+        /*
+         * second parameter to be an array of messages and results
+         */
+        public function render($view, $parameters=array())
         {
+            $messages = isset($parameters['messages']) ? $parameters['messages'] : false;
+
             $this->header();
             if($messages != false) $this->printMessages($messages);
-            $this->$view();
+            $this->$view($parameters);
             $this->footer();
+        }
+
+        private function desc($parameters)
+        {
+            $results = $parameters['results'];
+            $tableName = substr($_REQUEST['query'], strpos($_REQUEST['query'], ' ')+1);
+            ?>
+            <p>Description for <a href="?action=runQuery&amp;query=SELECT%20*%20FROM%20<?php echo $tableName ?>"><?php echo $tableName ?></a></p>
+            <table id="results"><tr><td>Field</td><td>Type</td><td>Null</td><td>Key</td><td>Default</td><td>Extra</td></tr><?php
+
+            foreach($results as $result)
+            {
+                ?>
+                    <tr>
+                        <td><?php echo  $result->Field ?></td>
+                        <td><?php echo  $result->Type ?></td>
+                        <td><?php echo  $result->Null ?></td>
+                        <td><?php echo  $result->Key ?></td>
+                        <td><?php echo  $result->Default ?></td>
+                        <td><?php echo  $result->Extra ?></td>
+                    </tr>
+
+                <?php
+            }
+            ?></table><?php
+        }
+
+        private function select($parameters)
+        {
+            $results = $parameters['results'];
+            ?><table id="results"><?php
+
+            if( $parameters['fields'] != false )
+            {
+                ?><tr><?php
+                foreach( $parameters['fields'] as $field ) :
+                ?><th><?php echo $field?></th><?php
+
+                endforeach;
+                ?></tr><?php
+            }
+
+            foreach($results as $result) :
+
+                ?><tr><?php
+
+                    foreach($result as $value) :
+                    ?>
+                        <td><?php echo $value ?></td>
+
+                    <?php endforeach; ?>
+                
+                 </tr><?php
+
+            endforeach;
+
+            ?></table><?php
+        }
+
+        private function showTables($parameters)
+        {
+            $results = $parameters['results'];
+
+            ?><table id="results"><?php
+            foreach($results as $result)
+            {
+                ?>
+                    <tr><td><a href="?action=runQuery&query=DESC%20<?php echo $result->Tables_in_cpoty ?>">D</a></td>
+                    <td><?php echo $result->Tables_in_cpoty ?></td></tr>
+
+                <?php
+            }
+            ?></table><?php
         }
 
         private function printMessages($messages)
@@ -151,7 +300,8 @@
 
             <div id="queryBox">
                 <form action="" method="post">
-                    <textarea></textarea>
+                    <label for="query">Query</label>
+                    <textarea name="query" id="query"></textarea>
                     <input type="submit" name="submit" value="submit" />
                     <input type="hidden" name="action" value="runQuery">
                 </form>
