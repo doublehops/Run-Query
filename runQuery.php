@@ -272,6 +272,8 @@
 
         public function destroySession()
         {
+            if( headers_sent() ) return;
+            
             session_destroy();
             setcookie( session_name(), '', time() - 42000) ;
             unset( $_SESSION['mysqlHost'] );
@@ -527,7 +529,7 @@
                         display: inline;
                     }
 
-                    #queryBox, #query, #runQuery, #menu, #results {
+                    #queryBox, #query, #runQuery, #menu, #results, #loginForm {
                         clear: both;
                         margin: 0 auto;
                         text-align: center;
@@ -570,6 +572,39 @@
                     }
 
                     tr td:last-child { border-right: none; }
+                    tr:last-child  td { border-bottom: none; }
+
+                    #loginForm {
+                        width: 250px;
+                        padding: 20px;
+                        border: 2px solid #a30;
+                        border-radius: 10px;
+                    }
+
+                    #loginForm dl {
+                        margin: 0 auto;
+                        width: 182px;
+                        color: #333;
+                    }
+                    
+                    #loginForm label {
+                        text-align: left;
+                        font-family: Arial;
+                        font-size: 14px;
+                        float: left;
+                    }
+
+                    #loginForm dd { 
+                        margin-left: 0; 
+                        margin-bottom: 10px;
+                    }
+
+                    #loginForm input {
+                        border: 1px solid #ccc;
+                        border-radius: 7px;
+                        text-indent: 3px;
+                        color: #666;
+                    }
                 </style>
             <?php
         }
