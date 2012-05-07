@@ -30,14 +30,12 @@
         {
             $action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : false;
 
-            $this->view->render( 'header' );
-
             if( $action == 'logout' )
             {
                 $this->session->destroySession();
-                $this->view->render( 'loginForm' );
-                exit;
             }
+
+            $this->view->render( 'header' );
 
             // If current session available, reconnect to DB
             if( $this->session->isActiveSessionGood() )
@@ -304,12 +302,16 @@
         {
             if( headers_sent() ) return;
             
+            session_regenerate_id();
             session_destroy();
             setcookie( session_name(), '', time() - 42000) ;
             unset( $_SESSION['mysqlHost'] );
             unset( $_SESSION['mysqlDatabase'] );
             unset( $_SESSION['mysqlUsername'] );
             unset( $_SESSION['mysqlPassword'] );
+
+            header( 'Location: '. $_SERVER['DOCUMENT_URI'] );
+            exit;
         }
     }
 
