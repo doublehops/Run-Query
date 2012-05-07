@@ -1,1 +1,1 @@
-This PHP script is a single file MySQL database query tool that is very useful when ssh access is not available and phpMyAdmin is overkill. It requires zero configuration. Just login to the database and start writing queries.
+This PHP script is a single file MySQL database query tool that is very useful when ssh access is not available and phpMyAdmin is overkill. It requires zero configuration. Just upload the script to your webserver, login to the database and start writing queries.
