@@ -78,6 +78,8 @@
                 $this->view->render( $object['queryType'], array( 'results'=>$object['results'], 'fields'=>$fields ) );
             }
 
+            $this->view->render( 'rowCount', $object['numRows'] );
+
             $this->view->render( 'footer' );
         }
 
@@ -133,20 +135,23 @@
                 case 'showTables' :
 
                     $results = $this->executeQuery( 'SHOW TABLES', PDO::FETCH_ASSOC );
+                    $numRows = count( $results );
 
                     break;
 
                 case 'desc' :
 
                     $results = $this->executeQuery( $query, PDO::FETCH_OBJ );
+                    $numRows = count( $results );
 
                     break;
 
                 case 'select' :
 
                     $results = $this->executeQuery( $query, PDO::FETCH_ASSOC );
+                    $numRows = count( $results );
 
-                    $fields = $this->getFields( $results );
+                    if( $numRows > 0 ) $fields = $this->getFields( $results );
 
                     if( !$this->isErrorFree() )
                     {
@@ -164,7 +169,7 @@
 
             $fields = isset( $fields ) ? $fields : false;
 
-            return array( 'results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields );
+            return array( 'results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields, 'numRows'=>$numRows );
         }
 
         /*
@@ -471,6 +476,14 @@
         }
 
         /*
+         *  Print the number of rows returned or changed by query
+         */
+        private function rowCount( $numRows )
+        {
+            ?><div id="numRows">Rows (selected/modified): <?php echo $numRows ?> </div><?php
+        }
+
+        /*
          *  Print menu
          */
         function menu()
@@ -633,6 +646,15 @@
                         text-indent: 3px;
                         color: #666;
                     }
+
+                    #numRows {
+                        margin: 10px auto;
+                        width: 250px;
+                        border: 1px solid #ccc;
+                        border-radius: 5px;
+                        padding: 5px 3px;
+                        text-align: center;
+                    }   
                 </style>
             <?php
         }
