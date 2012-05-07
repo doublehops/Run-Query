@@ -492,7 +492,7 @@
                 <div id="menu">
                     <ul>
                         <li>Using database <em><?php echo $database ?></em></li> |
-                        <li><a href="?action=runQuery&query=show%20tables">Show Tables</a></li> | 
+                        <li><a href="?action=runQuery&query=SHOW%20TABLES">Show tables</a></li> | 
                         <li><a href="?action=logout">Logout</a></li>
                     </ul>
                 </div> <!-- end menu -->
