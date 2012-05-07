@@ -146,14 +146,9 @@
 
                     $results = $this->executeQuery( $query, PDO::FETCH_ASSOC );
 
-                    if( $this->isErrorFree() )
-                    {
-                        if( preg_match( '/^select \*/i', $query ) == 1 )
-                        {
-                            $fields = $this->getFields( $query );
-                        }
-                    }
-                    else
+                    $fields = $this->getFields( $results );
+
+                    if( !$this->isErrorFree() )
                     {
                         die( 'handle error' );
                     }
@@ -223,23 +218,16 @@
         /*
          *  Return field (or column) names
          */
-        private function getFields( $query )
+        private function getFields( $results )
         {
-            $fields = array();
+            $columnTitles = array();
 
-            $tablename = explode( ' ', $query );
-            $tablename = $tablename[3];
-
-            $theQuery = $this->dbh->prepare( 'DESC '. $tablename );
-            $theQuery->execute();
-            $results = $theQuery->fetchAll( PDO::FETCH_OBJ );
-
-            foreach( $results as $result )
+            foreach( $results[0] as $key=>$value )
             {
-                $fields[] = $result->Field;
+                $columnTitles[] = $key;
             }
 
-            return $fields;
+            return $columnTitles;
         }
 
         /*
