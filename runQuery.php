@@ -121,15 +121,16 @@
             switch ( $queryType )
             {
                 case 'insert' :
+                case 'update' :
+                case 'delete' :
 
                     $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
                     return array( 'results'=>null, 'queryType'=>'insert', 'fields'=>null, 'numRows'=>$numRows );
 
                     break;
 
-                case 'update' :
-
-                    //$results = $this->executeMod( 'SHOW TABLES', PDO::FETCH_ASSOC );
+                    $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
+                    return array( 'results'=>null, 'queryType'=>'insert', 'fields'=>null, 'numRows'=>$numRows );
 
                     break;
 
@@ -242,6 +243,8 @@
         private function queryType( $query )
         {
             if( preg_match( '/^INSERT/i', $query ) ) return 'insert';
+            if( preg_match( '/^UPDATE/i', $query ) ) return 'update';
+            if( preg_match( '/^DELETE/i', $query ) ) return 'delete';
             if( preg_match( '/^SELECT/i', $query ) ) return 'select';
             if( preg_match( '/^SHOW TABLES/i', $query ) ) return 'showTables';
             if( preg_match( '/^DESC/i', $query ) ) return 'desc';
