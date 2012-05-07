@@ -31,7 +31,6 @@
             $action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : false;
 
             $this->view->render( 'header' );
-            $this->view->render( 'menu' );
 
             if( $action == 'logout' )
             {
@@ -65,6 +64,8 @@
                 $this->view->render( 'loginForm' );
                 exit;
             }
+
+            $this->view->render( 'menu' );
 
             $this->view->render( 'queryBox' );
 
@@ -486,10 +487,11 @@
          */
         function menu()
         {
+            $database = isset( $_SESSION['mysqlDatabase'] ) ? $_SESSION['mysqlDatabase'] : 'none';
             ?>
                 <div id="menu">
                     <ul>
-                        <li>Using database <em><?php echo $_SESSION['mysqlDatabase'] ?></em></li> |
+                        <li>Using database <em><?php echo $database ?></em></li> |
                         <li><a href="?action=runQuery&query=show%20tables">Show Tables</a></li> | 
                         <li><a href="?action=logout">Logout</a></li>
                     </ul>
