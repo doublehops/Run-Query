@@ -489,6 +489,7 @@
             ?>
                 <div id="menu">
                     <ul>
+                        <li>Using database <em><?php echo $_SESSION['mysqlDatabase'] ?></em></li> |
                         <li><a href="?action=runQuery&query=show%20tables">Show Tables</a></li> | 
                         <li><a href="?action=logout">Logout</a></li>
                     </ul>
