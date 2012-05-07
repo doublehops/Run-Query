@@ -584,7 +584,7 @@
                         margin-top: 30px;
                         text-align: left;
                         border: 1px solid #ccc;
-                        border-radius: 10px;
+                        border-radius: 7px;
                         text-align: left;
                         text-indent: 10px;
                     }
@@ -596,8 +596,8 @@
 
                     #results tr:nth-child(odd) { background-color: #fff; }
                     #results tr:nth-child(even) { background-color: #eee; }
-                    #results tr:last-child td:first-child { border-bottom-left-radius: 8px }
-                    #results tr:last-child td:last-child { border-bottom-right-radius: 8px }
+                    #results tr:last-child td:first-child { border-bottom-left-radius: 5px }
+                    #results tr:last-child td:last-child { border-bottom-right-radius: 5px }
 
                     tr td:last-child { border-right: none; }
                     tr:last-child  td { border-bottom: none; }
