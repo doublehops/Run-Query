@@ -78,7 +78,7 @@
                 $this->view->render( $object['queryType'], array( 'results'=>$object['results'], 'fields'=>$fields ) );
             }
 
-            $this->view->render( 'rowCount', $object['numRows'] );
+            if( isset( $object['numRows'] ) ) $this->view->render( 'rowCount', $object['numRows'] );
 
             $this->view->render( 'footer' );
         }
