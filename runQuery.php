@@ -123,6 +123,7 @@
                 case 'insert' :
 
                     $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
+                    return array( 'results'=>null, 'queryType'=>'insert', 'fields'=>null, 'numRows'=>$numRows );
 
                     break;
 
@@ -387,6 +388,14 @@
             endforeach;
 
             ?></table><?php
+        }
+
+        /*
+         *
+         */
+        private function insert( $numRows )
+        {
+            // Nothing to print here
         }
 
         /*
