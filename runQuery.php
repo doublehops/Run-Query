@@ -631,6 +631,7 @@
 
                     #loginForm {
                         width: 250px;
+                        margin-top: 100px;
                         padding: 20px;
                         border: 2px solid #a30;
                         border-radius: 10px;
