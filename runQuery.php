@@ -88,6 +88,7 @@
      */
     class DB
     {
+        private $debug = true;
         private $dbh;
         private $errorMsg = false;
 
@@ -118,31 +119,31 @@
             {
                 case 'insert' :
 
-                    //$results = $this->execute( 'SHOW TABLES', PDO::FETCH_ASSOC );
+                    $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
 
                     break;
 
                 case 'update' :
 
-                    //$results = $this->execute( 'SHOW TABLES', PDO::FETCH_ASSOC );
+                    //$results = $this->executeMod( 'SHOW TABLES', PDO::FETCH_ASSOC );
 
                     break;
 
                 case 'showTables' :
 
-                    $results = $this->execute( 'SHOW TABLES', PDO::FETCH_ASSOC );
+                    $results = $this->executeQuery( 'SHOW TABLES', PDO::FETCH_ASSOC );
 
                     break;
 
                 case 'desc' :
 
-                    $results = $this->execute( $query, PDO::FETCH_OBJ );
+                    $results = $this->executeQuery( $query, PDO::FETCH_OBJ );
 
                     break;
 
                 case 'select' :
 
-                    $results = $this->execute( $query, PDO::FETCH_ASSOC );
+                    $results = $this->executeQuery( $query, PDO::FETCH_ASSOC );
 
                     if( $this->isErrorFree() )
                     {
@@ -170,11 +171,15 @@
             return array( 'results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields );
         }
 
-        private function execute( $query, $fetchMode )
+        /*
+         *  Execute query to fetch data
+         */
+        private function executeQuery( $query, $fetchMode )
         {
             try
             {
                 $theQuery = $this->dbh->prepare( $query );
+                if( $this->debug ) $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
                 $theQuery->execute();
                 $results = $theQuery->fetchAll( $fetchMode );
             }
@@ -182,10 +187,36 @@
             {
                 $this->errorMsg[] = $e->getMessage();
                 $results = false;
+
+                // TODO: Handle expceptions
+                die( var_dump( $this->errorMsg ) );
             }
 
             return $results;
+        }
 
+        /*
+         *  Execute query to modify (insert/update/delete) row
+         */
+        private function executeMod( $query, $fetchMode )
+        {
+            try
+            {
+                $theQuery = $this->dbh->prepare( $query );
+                if( $this->debug ) $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
+                $theQuery->execute();
+                $numRows = $theQuery->rowCount();
+            }
+            catch ( PDOException $e )
+            {
+                $this->errorMsg[] = $e->getMessage();
+                $numRows = 0;
+
+                // TODO: Handle expceptions
+                die( var_dump( $this->errorMsg ) );
+            }
+
+            return $numRows;
         }
 
         /*
@@ -215,6 +246,7 @@
          */
         private function queryType( $query )
         {
+            if( preg_match( '/^INSERT/i', $query ) ) return 'insert';
             if( preg_match( '/^SELECT/i', $query ) ) return 'select';
             if( preg_match( '/^SHOW TABLES/i', $query ) ) return 'showTables';
             if( preg_match( '/^DESC/i', $query ) ) return 'desc';
@@ -573,6 +605,8 @@
 
                     #results tr:nth-child(odd) { background-color: #fff; }
                     #results tr:nth-child(even) { background-color: #eee; }
+                    #results tr:last-child td:first-child { border-bottom-left-radius: 8px }
+                    #results tr:last-child td:last-child { border-bottom-right-radius: 8px }
 
                     tr td:last-child { border-right: none; }
                     tr:last-child  td { border-bottom: none; }
