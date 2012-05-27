@@ -1,459 +1,477 @@
 <?php
 
-    $ctrl = new Controller();
-    $ctrl->start();
+$ctrl = new Controller();
+$ctrl->start();
+
+/*
+ *  Control the flow of the application. 
+ */
+class Controller
+{
+    private $session;
+    private $view;
+    private $dbConn;
+    private $alertMessages = array();
 
     /*
-     *  Control the flow of the application. 
+     *   Create instances of Session, DB and View
      */
-    class Controller
+    public function __construct()
     {
-        private $session;
-        private $view;
-        private $dbConn;
-        private $alertMessages = array();
+        $this->session = new Session();
+        $this->dbConn = new DB();
+        $this->view = new View();
+    }
 
-        /*
-         *   Create instances of Session, DB and View
-         */
-        public function __construct()
+    /*
+     *  Start handling requests
+     */
+    public function start()
+    {
+        $action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : false;
+
+        if( $action == 'logout' )
         {
-            $this->session = new Session();
-            $this->dbConn = new DB();
-            $this->view = new View();
+            $this->session->destroySession();
+        }
+        elseif( $action == 'import' )
+        {
+           $this->dbConn->import( $_FILES['importFile'] );
         }
 
-        /*
-         *  Start handling requests
-         */
-        public function start()
+        $this->view->render( 'header' );
+
+        // If current session available, reconnect to DB
+        if( $this->session->isActiveSessionGood() )
         {
-            $action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : false;
+            $this->dbConn->connect( $_SESSION['mysqlHost'], $_SESSION['mysqlDatabase'], $_SESSION['mysqlUsername'], $_SESSION['mysqlPassword'] );
+        }
+        elseif( $action == 'login' )
+        {
+            $this->session->saveMysqlData( $_POST );
 
-            if( $action == 'logout' )
+            if( $this->dbConn->connect( $_POST['mysqlHost'], $_POST['mysqlDatabase'], $_POST['mysqlUsername'], $_POST['mysqlPassword'] ) )
             {
-                $this->session->destroySession();
-            }
-
-            $this->view->render( 'header' );
-
-            // If current session available, reconnect to DB
-            if( $this->session->isActiveSessionGood() )
-            {
-                $this->dbConn->connect( $_SESSION['mysqlHost'], $_SESSION['mysqlDatabase'], $_SESSION['mysqlUsername'], $_SESSION['mysqlPassword'] );
-            }
-            elseif( $action == 'login' )
-            {
-                $this->session->saveInputData( $_POST );
-
-                if( $this->dbConn->connect( $_POST['mysqlHost'], $_POST['mysqlDatabase'], $_POST['mysqlUsername'], $_POST['mysqlPassword'] ) )
-                {
-                    $this->session->savePassword( $_POST['mysqlPassword'] );
-                    $this->session->setActiveSessionGood();
-                }
-                else
-                {
-                    $this->view->render( 'loginForm', array( 'messages'=>$this->dbConn->getErrors() ) );
-                    exit;
-                }
+                $this->session->savePassword( $_POST['mysqlPassword'] );
+                $this->session->setActiveSessionGood();
             }
             else
             {
-                $this->view->render( 'loginForm' );
+                $this->view->render( 'loginForm', array( 'messages'=>$this->dbConn->getErrors() ) );
                 exit;
             }
-
-            $this->view->render( 'menu' );
-
-            $this->view->render( 'queryBox' );
-
-            if( $action == 'runQuery' )
-            {
-                $object = $this->dbConn->runQuery( $_REQUEST['query'] );
-
-                $fields = isset( $object['fields'] ) ? $object['fields'] : false;
-
-                $this->view->render( $object['queryType'], array( 'results'=>$object['results'], 'fields'=>$fields ) );
-            }
-
-            if( isset( $object['numRows'] ) ) $this->view->render( 'rowCount', $object['numRows'] );
-
-            $this->view->render( 'footer' );
         }
-
-    }
-
-    /*
-     *  class DB
-     *  Handle all database connections, queries and errors.
-     */
-    class DB
-    {
-        private $debug = true;
-        private $dbh;
-        private $errorMsg = false;
-
-        public function connect( $host, $database, $username, $password )
+        else
         {
-            try
-            {
-                $dsn = 'mysql:host='. $host .';dbname='. $database;
-                $this->dbh = new PDO( $dsn, $username, $password );
-                $this->dbh->setAttribute( PDO::ATTR_EMULATE_PREPARES, true );
-                $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-
-                $this->dbh->query( 'show tables' );  // Basic query to test connection
-            }
-            catch ( PDOException $e )
-            {
-                $this->errorMsg[] = $e->getMessage();
-            }
-
-            return $this->isErrorFree() ? true : false;
-        }
-
-        public function runQuery( $query )
-        {
-            $queryType = $this->queryType( $query );
-
-            switch ( $queryType )
-            {
-                case 'insert' :
-                case 'update' :
-                case 'delete' :
-
-                    $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
-                    return array( 'results'=>null, 'queryType'=>'insert', 'fields'=>null, 'numRows'=>$numRows );
-
-                    break;
-
-                    $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
-                    return array( 'results'=>null, 'queryType'=>'insert', 'fields'=>null, 'numRows'=>$numRows );
-
-                    break;
-
-                case 'showTables' :
-
-                    $results = $this->executeQuery( 'SHOW TABLES', PDO::FETCH_ASSOC );
-                    $numRows = count( $results );
-
-                    break;
-
-                case 'desc' :
-
-                    $results = $this->executeQuery( $query, PDO::FETCH_OBJ );
-                    $numRows = count( $results );
-
-                    break;
-
-                case 'select' :
-
-                    $results = $this->executeQuery( $query, PDO::FETCH_ASSOC );
-                    $numRows = count( $results );
-
-                    if( $numRows > 0 ) $fields = $this->getFields( $results );
-
-                    if( !$this->isErrorFree() )
-                    {
-                        die( 'handle error' );
-                    }
-
-                    break;
-                
-                case '' :
-
-                    die( 'No query received' );
-
-                    break;
-            }
-
-            $fields = isset( $fields ) ? $fields : false;
-
-            return array( 'results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields, 'numRows'=>$numRows );
-        }
-
-        /*
-         *  Execute query to fetch data
-         */
-        private function executeQuery( $query, $fetchMode )
-        {
-            try
-            {
-                $theQuery = $this->dbh->prepare( $query );
-                if( $this->debug ) $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
-                $theQuery->execute();
-                $results = $theQuery->fetchAll( $fetchMode );
-            }
-            catch ( PDOException $e )
-            {
-                $this->errorMsg[] = $e->getMessage();
-                $results = false;
-
-                // TODO: Handle expceptions
-                die( var_dump( $this->errorMsg ) );
-            }
-
-            return $results;
-        }
-
-        /*
-         *  Execute query to modify (insert/update/delete) row
-         */
-        private function executeMod( $query, $fetchMode )
-        {
-            try
-            {
-                $theQuery = $this->dbh->prepare( $query );
-                if( $this->debug ) $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
-                $theQuery->execute();
-                $numRows = $theQuery->rowCount();
-            }
-            catch ( PDOException $e )
-            {
-                $this->errorMsg[] = $e->getMessage();
-                $numRows = 0;
-
-                // TODO: Handle expceptions
-                die( var_dump( $this->errorMsg ) );
-            }
-
-            return $numRows;
-        }
-
-        /*
-         *  Return field (or column) names
-         */
-        private function getFields( $results )
-        {
-            $columnTitles = array();
-
-            foreach( $results[0] as $key=>$value )
-            {
-                $columnTitles[] = $key;
-            }
-
-            return $columnTitles;
-        }
-
-        /*
-         *  Determine the type of query that's being requested and handle accordingly
-         */
-        private function queryType( $query )
-        {
-            if( preg_match( '/^INSERT/i', $query ) ) return 'insert';
-            if( preg_match( '/^UPDATE/i', $query ) ) return 'update';
-            if( preg_match( '/^DELETE/i', $query ) ) return 'delete';
-            if( preg_match( '/^SELECT/i', $query ) ) return 'select';
-            if( preg_match( '/^SHOW TABLES/i', $query ) ) return 'showTables';
-            if( preg_match( '/^DESC/i', $query ) ) return 'desc';
-        }
-
-        /*
-         *  Return error messages recorded
-         */
-        public function getErrors()
-        {
-            return $this->errorMsg;
-        }
-
-        /*
-         *  Return whether last query encountered errors
-         */
-        public function isErrorFree()
-        {
-            return $this->errorMsg == false ? true : false;
-        }
-    }
-
-    /*
-     *  class Session
-     *  Handle all session data to store database connection info between page loads
-     */
-    class Session
-    {
-        public function __construct()
-        {
-            session_start();
-        }
-
-        public function isActiveSessionGood()
-        {
-            return ( isset( $_SESSION['dbConnGood'] ) && $_SESSION['dbConnGood'] == true ) ? true : false;
-        }
-
-        public function setActiveSessionGood()
-        {
-            $_SESSION['dbConnGood'] = true;
-        }
-
-        public function saveInputData( $post )
-        {
-            $_SESSION['mysqlHost'] = $post['mysqlHost'];
-            $_SESSION['mysqlDatabase'] = $post['mysqlDatabase'];
-            $_SESSION['mysqlUsername'] = $post['mysqlUsername'];
-        }
-
-        public function savePassword( $password )
-        {
-            $_SESSION['mysqlPassword'] = $password;
-        }
-
-        public function destroySession()
-        {
-            if( headers_sent() ) return;
-            
-            session_regenerate_id();
-            session_destroy();
-            setcookie( session_name(), '', time() - 42000) ;
-            unset( $_SESSION['mysqlHost'] );
-            unset( $_SESSION['mysqlDatabase'] );
-            unset( $_SESSION['mysqlUsername'] );
-            unset( $_SESSION['mysqlPassword'] );
-
-            header( 'Location: '. $_SERVER['DOCUMENT_URI'] );
+            $this->view->render( 'loginForm' );
             exit;
         }
+
+        $this->view->render( 'menu' );
+
+        $this->view->render( 'queryBox' );
+
+        $this->view->render( 'importExport' );
+
+        if( $action == 'runQuery' )
+        {
+            $object = $this->dbConn->runQuery( $_REQUEST['query'] );
+
+            $fields = isset( $object['fields'] ) ? $object['fields'] : false;
+
+            $this->view->render( $object['queryType'], array( 'results'=>$object['results'], 'fields'=>$fields ) );
+        }
+
+        if( isset( $object['numRows'] ) ) $this->view->render( 'rowCount', $object['numRows'] );
+
+        $this->view->render( 'footer' );
+    }
+
+}
+
+/*
+ *  class DB
+ *  Handle all database connections, queries and errors.
+ */
+class DB
+{
+    private $debug = true;
+    private $dbh;
+    private $errorMsg = false;
+
+    public function connect( $host, $database, $username, $password )
+    {
+        try
+        {
+            $dsn = 'mysql:host='. $host .';dbname='. $database;
+            $this->dbh = new PDO( $dsn, $username, $password );
+            $this->dbh->setAttribute( PDO::ATTR_EMULATE_PREPARES, true );
+            $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+
+            $this->dbh->query( 'show tables' );  // Basic query to test connection
+        }
+        catch ( PDOException $e )
+        {
+            $this->errorMsg[] = $e->getMessage();
+        }
+
+        return $this->isErrorFree() ? true : false;
+    }
+
+    public function import( $file )
+    {
+        $importCommand = $_POST['importCommand'];
+
+        $_SESSION['importCommand'] = $importCommand;
+
+       if( file_exists( $importCommand ) )
+       {
+            $result = system( $importCommand .' -u '. $_SESSION['mysqlUsername'] .' -p'. $_SESSION['mysqlPassword'] .' '. $_SESSION['mysqlDatabase'] .' < '. $_FILES['importFile']['tmp_name'] );
+       }
+    }
+
+    public function runQuery( $query )
+    {
+        $queryType = $this->queryType( $query );
+
+        switch ( $queryType )
+        {
+            case 'insert' :
+            case 'update' :
+            case 'delete' :
+
+                $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
+                return array( 'results'=>null, 'queryType'=>'insert', 'fields'=>null, 'numRows'=>$numRows );
+
+                break;
+
+                $numRows = $this->executeMod( $query, PDO::FETCH_ASSOC );
+                return array( 'results'=>null, 'queryType'=>'insert', 'fields'=>null, 'numRows'=>$numRows );
+
+                break;
+
+            case 'showTables' :
+
+                $results = $this->executeQuery( 'SHOW TABLES', PDO::FETCH_ASSOC );
+                $numRows = count( $results );
+
+                break;
+
+            case 'desc' :
+
+                $results = $this->executeQuery( $query, PDO::FETCH_OBJ );
+                $numRows = count( $results );
+
+                break;
+
+            case 'select' :
+
+                $results = $this->executeQuery( $query, PDO::FETCH_ASSOC );
+                $numRows = count( $results );
+
+                if( $numRows > 0 ) $fields = $this->getFields( $results );
+
+                if( !$this->isErrorFree() )
+                {
+                    die( 'handle error' );
+                }
+
+                break;
+            
+            case '' :
+
+                die( 'No query received' );
+
+                break;
+        }
+
+        $fields = isset( $fields ) ? $fields : false;
+
+        return array( 'results'=>$results, 'queryType'=>$queryType, 'fields'=>$fields, 'numRows'=>$numRows );
     }
 
     /*
-     *  class View
-     *  Try to separate view from the rest of the code as best as possible in a single file script.
+     *  Execute query to fetch data
      */
-    class View 
+    private function executeQuery( $query, $fetchMode )
     {
-        /*
-         * second parameter to be an array of arrays that might include messages and values
-         */
-        public function render( $view, $parameters=array() )
+        try
         {
-            $messages = isset( $parameters['messages'] ) ? $parameters['messages'] : false;
+            $theQuery = $this->dbh->prepare( $query );
+            if( $this->debug ) $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
+            $theQuery->execute();
+            $results = $theQuery->fetchAll( $fetchMode );
+        }
+        catch ( PDOException $e )
+        {
+            $this->errorMsg[] = $e->getMessage();
+            $results = false;
 
-            if( $messages != false ) $this->printMessages( $messages );
-            $this->$view( $parameters );
+            // TODO: Handle expceptions
+            die( var_dump( $this->errorMsg ) );
         }
 
-        /*
-         *  Print table description view
-         */
-        private function desc( $parameters )
+        return $results;
+    }
+
+    /*
+     *  Execute query to modify (insert/update/delete) row
+     */
+    private function executeMod( $query, $fetchMode )
+    {
+        try
         {
-            $results = $parameters['results'];
-            $tableName = substr( $_REQUEST['query'], strpos( $_REQUEST['query'], ' ' )+1 );
+            $theQuery = $this->dbh->prepare( $query );
+            if( $this->debug ) $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
+            $theQuery->execute();
+            $numRows = $theQuery->rowCount();
+        }
+        catch ( PDOException $e )
+        {
+            $this->errorMsg[] = $e->getMessage();
+            $numRows = 0;
+
+            // TODO: Handle expceptions
+            die( var_dump( $this->errorMsg ) );
+        }
+
+        return $numRows;
+    }
+
+    /*
+     *  Return field (or column) names
+     */
+    private function getFields( $results )
+    {
+        $columnTitles = array();
+
+        foreach( $results[0] as $key=>$value )
+        {
+            $columnTitles[] = $key;
+        }
+
+        return $columnTitles;
+    }
+
+    /*
+     *  Determine the type of query that's being requested and handle accordingly
+     */
+    private function queryType( $query )
+    {
+        if( preg_match( '/^INSERT/i', $query ) ) return 'insert';
+        if( preg_match( '/^UPDATE/i', $query ) ) return 'update';
+        if( preg_match( '/^DELETE/i', $query ) ) return 'delete';
+        if( preg_match( '/^SELECT/i', $query ) ) return 'select';
+        if( preg_match( '/^SHOW TABLES/i', $query ) ) return 'showTables';
+        if( preg_match( '/^DESC/i', $query ) ) return 'desc';
+    }
+
+    /*
+     *  Return error messages recorded
+     */
+    public function getErrors()
+    {
+        return $this->errorMsg;
+    }
+
+    /*
+     *  Return whether last query encountered errors
+     */
+    public function isErrorFree()
+    {
+        return $this->errorMsg == false ? true : false;
+    }
+}
+
+/*
+ *  class Session
+ *  Handle all session data to store database connection info between page loads
+ */
+class Session
+{
+    public function __construct()
+    {
+        session_start();
+    }
+
+    public function isActiveSessionGood()
+    {
+        return ( isset( $_SESSION['dbConnGood'] ) && $_SESSION['dbConnGood'] == true ) ? true : false;
+    }
+
+    public function setActiveSessionGood()
+    {
+        $_SESSION['dbConnGood'] = true;
+    }
+
+    public function saveMysqlData( $post )
+    {
+        $_SESSION['mysqlHost'] = $post['mysqlHost'];
+        $_SESSION['mysqlDatabase'] = $post['mysqlDatabase'];
+        $_SESSION['mysqlUsername'] = $post['mysqlUsername'];
+    }
+
+    public function savePassword( $password )
+    {
+        $_SESSION['mysqlPassword'] = $password;
+    }
+
+    public function destroySession()
+    {
+        if( headers_sent() ) return;
+        
+        session_regenerate_id();
+        session_destroy();
+        setcookie( session_name(), '', time() - 42000) ;
+        unset( $_SESSION['mysqlHost'] );
+        unset( $_SESSION['mysqlDatabase'] );
+        unset( $_SESSION['mysqlUsername'] );
+        unset( $_SESSION['mysqlPassword'] );
+
+        header( 'Location: '. $_SERVER['DOCUMENT_URI'] );
+        exit;
+    }
+}
+
+/*
+ *  class View
+ *  Try to separate view from the rest of the code as best as possible in a single file script.
+ */
+class View 
+{
+    /*
+     * second parameter to be an array of arrays that might include messages and values
+     */
+    public function render( $view, $parameters=array() )
+    {
+        $messages = isset( $parameters['messages'] ) ? $parameters['messages'] : false;
+
+        if( $messages != false ) $this->printMessages( $messages );
+        $this->$view( $parameters );
+    }
+
+    /*
+     *  Print table description view
+     */
+    private function desc( $parameters )
+    {
+        $results = $parameters['results'];
+        $tableName = substr( $_REQUEST['query'], strpos( $_REQUEST['query'], ' ' )+1 );
+        ?>
+        <p>Description of table <a href="?action=runQuery&amp;query=SELECT%20*%20FROM%20<?php echo $tableName ?>"><?php echo $tableName ?></a></p>
+        <table id="results"><tr><td>Field</td><td>Type</td><td>Null</td><td>Key</td><td>Default</td><td>Extra</td></tr><?php
+
+        foreach( $results as $result )
+        {
             ?>
-            <p>Description of table <a href="?action=runQuery&amp;query=SELECT%20*%20FROM%20<?php echo $tableName ?>"><?php echo $tableName ?></a></p>
-            <table id="results"><tr><td>Field</td><td>Type</td><td>Null</td><td>Key</td><td>Default</td><td>Extra</td></tr><?php
+                <tr>
+                    <td><?php echo  $result->Field ?></td>
+                    <td><?php echo  $result->Type ?></td>
+                    <td><?php echo  $result->Null ?></td>
+                    <td><?php echo  $result->Key ?></td>
+                    <td><?php echo  $result->Default ?></td>
+                    <td><?php echo  $result->Extra ?></td>
+                </tr>
 
-            foreach( $results as $result )
-            {
-                ?>
-                    <tr>
-                        <td><?php echo  $result->Field ?></td>
-                        <td><?php echo  $result->Type ?></td>
-                        <td><?php echo  $result->Null ?></td>
-                        <td><?php echo  $result->Key ?></td>
-                        <td><?php echo  $result->Default ?></td>
-                        <td><?php echo  $result->Extra ?></td>
-                    </tr>
-
-                <?php
-            }
-            ?></table><?php
-        }
-
-        /*
-         *  Print select query results
-         */
-        private function select( $parameters )
-        {
-            $results = $parameters['results'];
-            ?><table id="results"><?php
-
-            if( $parameters['fields'] != false )
-            {
-                ?><tr><?php
-                foreach( $parameters['fields'] as $field ) :
-                ?><th><?php echo $field?></th><?php
-
-                endforeach;
-                ?></tr><?php
-            }
-
-            foreach( $results as $result ) :
-
-                ?><tr><?php
-
-                    foreach( $result as $value ) :
-                    ?>
-                        <td><?php echo $value ?></td>
-
-                    <?php endforeach; ?>
-                
-                 </tr><?php
-
-            endforeach;
-
-            ?></table><?php
-        }
-
-        /*
-         *
-         */
-        private function insert( $numRows )
-        {
-            // Nothing to print here
-        }
-
-        /*
-         *  Print show tables view
-         */
-        private function showTables( $parameters )
-        {
-            $results = $parameters['results'];
-            $tableNameKey = 'Tables_in_'. $_SESSION['mysqlDatabase'];
-
-            ?><table id="results"><?php
-            foreach( $results as $result )
-            {
-                ?>
-                    <tr>
-                        <td><a href="?action=runQuery&query=DESC%20<?php echo $result[$tableNameKey] ?>">Desc</a></td>
-                        <td><a href="?action=runQuery&query=SELECT%20*%20FROM%20<?php echo $result[$tableNameKey] ?>">List Items</a></td>
-                        <td><?php echo $result[$tableNameKey] ?></td>
-                    </tr>
-
-                <?php
-            }
-            ?></table><?php
-        }
-
-        /*
-         *  Print messages view
-         */
-        private function printMessages( $messages )
-        {
-            ?>
-
-                <div id="messages">
-                    <?php foreach( $messages as $message ) : ?>
-                        <p><?php echo $message ?></p>
-                    <?php endforeach; ?>
-                </div> <!-- end messages -->
             <?php
         }
+        ?></table><?php
+    }
 
-        /*
-         *  Print query query textarea
-         */
-        private function queryBox()
+    /*
+     *  Print select query results
+     */
+    private function select( $parameters )
+    {
+        $results = $parameters['results'];
+        ?><table id="results"><?php
+
+        if( $parameters['fields'] != false )
         {
-            $query = isset( $_REQUEST['query'] ) ? $_REQUEST['query'] : '';
-            ?>
+            ?><tr><?php
+            foreach( $parameters['fields'] as $field ) :
+            ?><th><?php echo $field?></th><?php
 
-            <div id="queryBox">
-                <form action="" method="post">
+            endforeach;
+            ?></tr><?php
+        }
+
+        foreach( $results as $result ) :
+
+            ?><tr><?php
+
+                foreach( $result as $value ) :
+                ?>
+                    <td><?php echo $value ?></td>
+
+                <?php endforeach; ?>
+            
+             </tr><?php
+
+        endforeach;
+
+        ?></table><?php
+    }
+
+    /*
+     *
+     */
+    private function insert( $numRows )
+    {
+        // Nothing to print here
+    }
+
+    /*
+     *  Print show tables view
+     */
+    private function showTables( $parameters )
+    {
+        $results = $parameters['results'];
+        $tableNameKey = 'Tables_in_'. $_SESSION['mysqlDatabase'];
+
+        ?><table id="results"><?php
+        foreach( $results as $result )
+        {
+            ?>
+                <tr>
+                    <td><a href="?action=runQuery&query=DESC%20<?php echo $result[$tableNameKey] ?>">Desc</a></td>
+                    <td><a href="?action=runQuery&query=SELECT%20*%20FROM%20<?php echo $result[$tableNameKey] ?>">List Items</a></td>
+                    <td><?php echo $result[$tableNameKey] ?></td>
+                </tr>
+
+            <?php
+        }
+        ?></table><?php
+    }
+
+    /*
+     *  Print messages view
+     */
+    private function printMessages( $messages )
+    {
+        ?>
+
+            <div id="messages">
+                <?php foreach( $messages as $message ) : ?>
+                    <p><?php echo $message ?></p>
+                <?php endforeach; ?>
+            </div> <!-- end messages -->
+        <?php
+    }
+
+    /*
+     *  Print query query textarea
+     */
+    private function queryBox()
+    {
+        $query = isset( $_REQUEST['query'] ) ? $_REQUEST['query'] : '';
+        ?>
+
+        <div id="queryBox">
+            <form action="" method="post">
                     <textarea name="query" id="query"><?php echo $query ?></textarea>
                     <p><input type="submit" name="submit" value="Run Query" /></p>
-                    <p><input type="hidden" name="action" value="runQuery" id="runQuery"></p>
+                    <input type="hidden" name="action" value="runQuery" id="runQuery">
                 </form>
             </div> <!-- end queryBox -->
 
@@ -549,6 +567,33 @@
             <?php
         }
 
+        function importExport()
+        {
+            $importCommand = isset( $_SESSION['importCommand'] ) ? $_SESSION['importCommand'] : '/usr/bin/mysql';
+
+            ?>
+                <div id="importExport">
+                    <div>
+                        <form action="runQuery.php" method="post" enctype="multipart/form-data">
+                            <label for="importCommand">Import command</label>
+                            <input type="text" name="importCommand" id="importCommand" value="<?php echo $importCommand ?>" />
+                            <label for="importFile">Import</label>
+                            <input type="file" name="importFile" id="importFile" />
+                            <input type="submit" name="submit" value="Import" />
+                            <input type="hidden" name="action" value="import" />
+                        </form>
+                        <form action="" method="post">
+                            <label for="exportCommand">Export command</label>
+                            <input type="text" name="exportCommand" id="exportCommand" value="" />
+                            <input type="submit" name="submit" value="Export" />
+                            <input type="hidden" name="action" value="export" />
+                        </form>
+                        </form>
+                    </div>
+                </div>
+            <?php
+        }
+
         function styles()
         {
             ?>
@@ -579,13 +624,13 @@
                         display: inline;
                     }
 
-                    #queryBox, #query, #runQuery, #menu, #results, #loginForm {
+                    #queryBox, #query, #runQuery, #menu, #results, #loginForm, #importExport {
                         clear: both;
-                        margin: 0 auto;
+                        margin: 3px auto;
                         text-align: center;
                     }
 
-                    #queryBox {
+                    #queryBox, #importExport {
                         width: 650px;
                         padding: 20px;
                         border: 2px solid #aaa;
