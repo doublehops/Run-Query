@@ -28,6 +28,8 @@ class Controller
      */
     public function start()
     {
+        $parameters = array();
+
         $action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : false;
 
         if( $action == 'logout' )
@@ -36,7 +38,8 @@ class Controller
         }
         elseif( $action == 'import' )
         {
-           $this->dbConn->import( $_FILES['importFile'] );
+           $result = $this->dbConn->import( $_FILES['importFile'] );
+           $parameters['messages'][] = $result;
         }
 
         $this->view->render( 'header' );
@@ -69,7 +72,7 @@ class Controller
 
         $this->view->render( 'menu' );
 
-        $this->view->render( 'queryBox' );
+        $this->view->render( 'queryBox', $parameters );
 
         $this->view->render( 'importExport' );
 
@@ -126,8 +129,11 @@ class DB
 
        if( file_exists( $importCommand ) )
        {
-            $result = system( $importCommand .' -u '. $_SESSION['mysqlUsername'] .' -p'. $_SESSION['mysqlPassword'] .' '. $_SESSION['mysqlDatabase'] .' < '. $_FILES['importFile']['tmp_name'] );
+            $result = exec( $importCommand .' -u '. $_SESSION['mysqlUsername'] .' -p'. $_SESSION['mysqlPassword'] .' '. $_SESSION['mysqlDatabase'] .' < '. $_FILES['importFile']['tmp_name'] );
+            return 'Import file ran';
        }
+
+       return 'Import command not found in system';
     }
 
     public function runQuery( $query )
@@ -624,17 +630,21 @@ class View
                         display: inline;
                     }
 
-                    #queryBox, #query, #runQuery, #menu, #results, #loginForm, #importExport {
+                    #queryBox, #query, #runQuery, #menu, #results, #loginForm, #importExport, #messages {
                         clear: both;
                         margin: 3px auto;
                         text-align: center;
                     }
 
-                    #queryBox, #importExport {
+                    #queryBox, #importExport, #messages {
                         width: 650px;
                         padding: 20px;
                         border: 2px solid #aaa;
                         border-radius: 10px;
+                    }
+
+                    #messages {
+                        padding: 2px 20px;
                     }
 
                     #container p {
