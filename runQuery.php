@@ -41,6 +41,11 @@ class Controller
            $result = $this->dbConn->import( $_FILES['importFile'] );
            $parameters['messages'][] = $result;
         }
+        elseif( $action == 'export' )
+        {
+           $result = $this->dbConn->export();
+           $parameters['messages'][] = $result;
+        }
 
         $this->view->render( 'header' );
 
@@ -134,6 +139,25 @@ class DB
        }
 
        return 'Import command not found in system';
+    }
+
+    public function export()
+    {
+        $exportCommand = $_POST['exportCommand'];
+
+        $_SESSION['exportCommand'] = $exportCommand;
+
+       if( file_exists( $exportCommand ) )
+       {
+            $tmpFile = '/var/tmp/mysqlDump-'. date('Y-m-d_H:i:s') .'.sql';
+            $result = exec( $exportCommand .' -u '. $_SESSION['mysqlUsername'] .' -p'. $_SESSION['mysqlPassword'] .' '. $_SESSION['mysqlDatabase'] .' > '. $tmpFile);
+
+            header("Content-Disposition:attachment;filename='". $tmpFile ."'");
+            readfile( $tmpFile );
+            exit;
+       }
+
+       return 'Export command not found in system';
     }
 
     public function runQuery( $query )
@@ -576,21 +600,22 @@ class View
         function importExport()
         {
             $importCommand = isset( $_SESSION['importCommand'] ) ? $_SESSION['importCommand'] : '/usr/bin/mysql';
+            $exportCommand = isset( $_SESSION['exportCommand'] ) ? $_SESSION['exportCommand'] : '/usr/bin/mysqldump';
 
             ?>
                 <div id="importExport">
                     <div>
+                        <p>For *nix only</p>
                         <form action="runQuery.php" method="post" enctype="multipart/form-data">
                             <label for="importCommand">Import command</label>
                             <input type="text" name="importCommand" id="importCommand" value="<?php echo $importCommand ?>" />
-                            <label for="importFile">Import</label>
                             <input type="file" name="importFile" id="importFile" />
                             <input type="submit" name="submit" value="Import" />
                             <input type="hidden" name="action" value="import" />
                         </form>
-                        <form action="" method="post">
+                        <form action="" method="post" id="exportDiv">
                             <label for="exportCommand">Export command</label>
-                            <input type="text" name="exportCommand" id="exportCommand" value="" />
+                            <input type="text" name="exportCommand" id="exportCommand" value="<?php echo $exportCommand ?>" />
                             <input type="submit" name="submit" value="Export" />
                             <input type="hidden" name="action" value="export" />
                         </form>
@@ -641,6 +666,10 @@ class View
                         padding: 20px;
                         border: 2px solid #aaa;
                         border-radius: 10px;
+                    }
+
+                    #exportDiv {
+                        margin-top: 20px;
                     }
 
                     #messages {
