@@ -556,6 +556,7 @@ class View
                     <ul>
                         <li>Using database <em><?php echo $database ?></em></li> |
                         <li><a href="?action=runQuery&query=SHOW%20TABLES">Show tables</a></li> | 
+                        <li><a href="#" id="importExportLink">Import/Export</a></li> | 
                         <li><a href="?action=logout">Logout</a></li>
                     </ul>
                 </div> <!-- end menu -->
@@ -577,6 +578,7 @@ class View
                     <meta name="description" content="runQuery">
                     <meta name="author" content="Simple MySQL App">
                     <?php $this->styles(); ?>
+                    <?php $this->javascript(); ?>
                 </head>
                 <body>
                     <div id="container">
@@ -603,7 +605,7 @@ class View
             $exportCommand = isset( $_SESSION['exportCommand'] ) ? $_SESSION['exportCommand'] : '/usr/bin/mysqldump';
 
             ?>
-                <div id="importExport">
+                <div id="importExport" style="display: none;">
                     <div>
                         <p>For *nix only</p>
                         <form action="runQuery.php" method="post" enctype="multipart/form-data">
@@ -644,7 +646,7 @@ class View
 
                     #container { width: 100%; }
 
-                    #menu { width: 400px; }
+                    #menu { width: 410px; }
 
                     #menu ul {
                        list-style-type: none; 
@@ -756,5 +758,28 @@ class View
                     }   
                 </style>
             <?php
+        }
+
+        public function javascript()
+        {
+            ?>
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+                <script>
+                    $(document).ready(function(){
+
+                        catchImportExportEvent();
+                    });
+
+                    function catchImportExportEvent() {
+
+                        $('#importExportLink').click(function() {
+
+                            $('#importExport').toggle();
+                        });
+                    }
+                </script>
+
+            <?php
+
         }
     }
