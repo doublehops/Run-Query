@@ -1,5 +1,17 @@
 <?php
 
+/*
+ *  Author: Damien Buttler
+ *  Website: http://www.doublehops.com
+ *  Email: damien@doublehops.com
+ *
+ *  This script is designed to be a stand-alone file to run queries
+ *  to your MySQL database. This is most useful when you don't
+ *  have ssh access to a host and find phpMyAdmin to much
+ *  trouble to install for small tasks. Just upload the 
+ *  script to your host and start running queries.
+ */
+
 $ctrl = new Controller();
 $ctrl->start();
 
@@ -520,7 +532,7 @@ class View
             ?>
                 <form action="" method="post">
                     <div id="loginForm">
-                    <h1 id="header"><a href="http://www.doublehops.com" target="_blank">RunQuery</a></h1>
+                    <h1 id="header"><a href="http://www.doublehops.com?runQuery" target="_blank">RunQuery</a></h1>
                         <dl>
                             <dt><label for="mysqlHost">MySQL Host</label></dt>
                             <dd><input type="text" name="mysqlHost" id="mysqlHost" value="<?php echo $mysqlHost ?>" /></dd>
@@ -554,7 +566,7 @@ class View
             $database = isset( $_SESSION['mysqlDatabase'] ) ? $_SESSION['mysqlDatabase'] : 'none';
             ?>
                 <div id="menu">
-                    <h1 id="header"><a href="http://www.doublehops.com" target="_blank">RunQuery</a></h1>
+                    <h1 id="header"><a href="http://www.doublehops.com?runQuery" target="_blank">RunQuery</a></h1>
                     <ul>
                         <li>Using database <em><?php echo $database ?></em></li> |
                         <li><a href="?action=runQuery&query=SHOW%20TABLES">Show tables</a></li> | 
