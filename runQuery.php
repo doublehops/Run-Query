@@ -500,7 +500,7 @@ class View
         <div id="queryBox">
             <form action="" method="post">
                     <textarea name="query" id="query"><?php echo $query ?></textarea>
-                    <p><input type="submit" name="submit" value="Run Query" /></p>
+                    <p><input type="submit" name="submit" value="Run Query" class="submit" /></p>
                     <input type="hidden" name="action" value="runQuery" id="runQuery">
                 </form>
             </div> <!-- end queryBox -->
@@ -520,6 +520,7 @@ class View
             ?>
                 <form action="" method="post">
                     <div id="loginForm">
+                    <h1 id="header"><a href="http://www.doublehops.com" target="_blank">RunQuery</a></h1>
                         <dl>
                             <dt><label for="mysqlHost">MySQL Host</label></dt>
                             <dd><input type="text" name="mysqlHost" id="mysqlHost" value="<?php echo $mysqlHost ?>" /></dd>
@@ -553,6 +554,7 @@ class View
             $database = isset( $_SESSION['mysqlDatabase'] ) ? $_SESSION['mysqlDatabase'] : 'none';
             ?>
                 <div id="menu">
+                    <h1 id="header"><a href="http://www.doublehops.com" target="_blank">RunQuery</a></h1>
                     <ul>
                         <li>Using database <em><?php echo $database ?></em></li> |
                         <li><a href="?action=runQuery&query=SHOW%20TABLES">Show tables</a></li> | 
@@ -612,13 +614,13 @@ class View
                             <label for="importCommand">Import command</label>
                             <input type="text" name="importCommand" id="importCommand" value="<?php echo $importCommand ?>" />
                             <input type="file" name="importFile" id="importFile" />
-                            <input type="submit" name="submit" value="Import" />
+                            <input type="submit" name="submit" value="Import" class="submit" />
                             <input type="hidden" name="action" value="import" />
                         </form>
                         <form action="" method="post" id="exportDiv">
                             <label for="exportCommand">Export command</label>
                             <input type="text" name="exportCommand" id="exportCommand" value="<?php echo $exportCommand ?>" />
-                            <input type="submit" name="submit" value="Export" />
+                            <input type="submit" name="submit" value="Export" class="submit" />
                             <input type="hidden" name="action" value="export" />
                         </form>
                         </form>
@@ -631,18 +633,40 @@ class View
         {
             ?>
                 <link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css" />
+                <link href='http://fonts.googleapis.com/css?family=Orbitron:900' rel='stylesheet' type='text/css'>
                 <style>
-                    body {
+                    body, textarea {
+                        background-color: #000;
                         font-size: 14px;
-                        font-family: Arial;
+                        font-family: Arial, Verdana;
+                        color: rgb(21,171,195);
+                    }
+
+                    h1#header {
+                        margin: 0 auto;
+                        width: 250px;
+                        text-align: center;
+                        font-family: Orbitron, Arial;
+                        font-size: 35px;
+                        color: #000;
+                        -moz-text-shadow: 0 0 0.2em rgb(21,171,195);
+                        text-shadow: 0 0 0.2em rgb(21,171,195), 0 0 0.2em rgb(21,171,195);
+                    }
+
+                    #loginForm h1#header {
+                        margin-bottom: 10px;
+                    }
+
+                    h1#header a {
+                       color: #000; 
                     }
 
                     a:link, a:visited, a:active {
                         text-decoration: none;
-                        color: #333;
+                        color: rgb(21,171,195);
                     }
 
-                    a:hover { color: #666; }
+                    a:hover { color: rgb(41,200,225); }
 
                     #container { width: 100%; }
 
@@ -665,8 +689,8 @@ class View
 
                     #queryBox, #importExport, #messages {
                         width: 650px;
-                        padding: 20px;
-                        border: 2px solid #aaa;
+                        padding: 5px;
+                        border: 2px solid rgb(21,171,195);
                         border-radius: 10px;
                     }
 
@@ -686,29 +710,24 @@ class View
                     #query {
                         padding-top: 3px;
                         width: 600px;
-                        height: 75px;
-                        border: 1px solid #ccc;
+                        height: 50px;
+                        border: 1px solid rgb(21,171,195);
                         border-radius: 10px;
                         text-align: left;
-                        text-indent: 10px;
+                        padding: 10px;
                     }
 
                     #results {
                         margin-top: 30px;
                         text-align: left;
-                        border: 1px solid #ccc;
+                        border: 1px solid rgb(21,171,195);
                         border-radius: 7px;
                         text-align: left;
                         text-indent: 10px;
                     }
                     
-                    td {
-                        border-bottom: 1px solid #ddd;
-                        border-right: 1px solid #ddd;
-                    }
-
-                    #results tr:nth-child(odd) { background-color: #fff; }
-                    #results tr:nth-child(even) { background-color: #eee; }
+                    #results tr:nth-child(odd) { background-color: #000; }
+                    #results tr:nth-child(even) { background-color: #1e1e1e; }
                     #results tr:last-child td:first-child { border-bottom-left-radius: 5px }
                     #results tr:last-child td:last-child { border-bottom-right-radius: 5px }
 
@@ -719,21 +738,23 @@ class View
                         width: 250px;
                         margin-top: 100px;
                         padding: 20px;
-                        border: 2px solid #a30;
+                        border: 2px solid rgb(21,171,195);
                         border-radius: 10px;
                     }
 
                     #loginForm dl {
                         margin: 0 auto;
                         width: 182px;
-                        color: #333;
+                        color: rgb(21,171,195);
                     }
                     
                     #loginForm label {
                         text-align: left;
                         font-family: Arial;
-                        font-size: 14px;
+                        font-size: 13px;
+                        text-indent: 1px;
                         float: left;
+                        margin-bottom: 2px;
                     }
 
                     #loginForm dd { 
@@ -741,17 +762,24 @@ class View
                         margin-bottom: 10px;
                     }
 
-                    #loginForm input {
-                        border: 1px solid #ccc;
+                    #loginForm input, #importExport input, .submit, #numRows {
+                        color: rgb(0,0,0);
                         border-radius: 7px;
-                        text-indent: 3px;
-                        color: #666;
+                        border: none;
+                        text-align: center;
+                        background-color: rgb(21,171,195);
                     }
+
+                    .submit, #numRows {
+                        height: 25px;
+                        line-height: 25px;
+                    }
+
 
                     #numRows {
                         margin: 10px auto;
                         width: 250px;
-                        border: 1px solid #ccc;
+                        border: 1px solid rgb(21,171,195);
                         border-radius: 5px;
                         padding: 5px 3px;
                         text-align: center;
